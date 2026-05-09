@@ -1,0 +1,1349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title> Property Tax Data Visualizer: How Higher Taxes Open Housing Markets</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --ink: #0f0e0d;
+    --paper: #f5f0e8;
+    --paper2: #ede6d6;
+    --tx: #c8410b;
+    --ca: #1a5c9e;
+    --gold: #c9922a;
+    --rule: #2a2a2a;
+    --muted: #6b6558;
+    --accent-light: #fff8ee;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  /* ── MASTHEAD ── */
+  .masthead {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 0;
+    position: relative;
+    overflow: hidden;
+  }
+  .masthead-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 80px 40px 60px;
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 60px;
+    align-items: end;
+  }
+  .masthead-tag {
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 20px;
+    font-weight: 500;
+  }
+  .masthead h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2.4rem, 5vw, 4rem);
+    font-weight: 900;
+    line-height: 1.1;
+    margin-bottom: 24px;
+  }
+  .masthead h1 em {
+    font-style: italic;
+    color: var(--gold);
+  }
+  .masthead-sub {
+    font-size: 1.05rem;
+    color: #c8c0b4;
+    max-width: 520px;
+    line-height: 1.65;
+  }
+  .masthead-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .stat-pill {
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 4px;
+    padding: 18px 22px;
+  }
+  .stat-pill .num {
+    font-family: 'Playfair Display', serif;
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: var(--gold);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .stat-pill .label {
+    font-size: 0.78rem;
+    letter-spacing: 0.5px;
+    color: #a09890;
+    line-height: 1.4;
+  }
+  .masthead-rule {
+    height: 1px;
+    background: var(--gold);
+    width: 60px;
+    margin: 30px 0;
+  }
+  .sources-bar {
+    background: #1a1916;
+    border-top: 1px solid #2e2b27;
+    padding: 14px 40px;
+    max-width: 100%;
+  }
+  .sources-bar-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  .sources-bar span {
+    font-size: 10.5px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: #665e55;
+    font-weight: 500;
+  }
+  .src-link {
+    font-size: 11px;
+    color: #9a9086;
+    text-decoration: none;
+    border-bottom: 1px dotted #554e46;
+    padding-bottom: 1px;
+    transition: color 0.2s;
+  }
+  .src-link:hover { color: var(--gold); }
+
+  /* ── LAYOUT ── */
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 40px;
+  }
+
+  section {
+    padding: 70px 0;
+    border-bottom: 1px solid #ddd6c6;
+  }
+  section:last-of-type { border-bottom: none; }
+
+  .section-tag {
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--gold);
+    font-weight: 500;
+    margin-bottom: 12px;
+  }
+  h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1.6rem, 3vw, 2.4rem);
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 16px;
+  }
+  .lead {
+    font-size: 1.08rem;
+    color: #3a342c;
+    max-width: 680px;
+    margin-bottom: 40px;
+    line-height: 1.75;
+  }
+
+  /* ── PULL QUOTE ── */
+  .pull-quote {
+    border-left: 3px solid var(--gold);
+    padding: 20px 28px;
+    margin: 36px 0;
+    background: var(--accent-light);
+    border-radius: 0 4px 4px 0;
+  }
+  .pull-quote p {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.15rem;
+    font-style: italic;
+    line-height: 1.6;
+    color: #2a221a;
+    margin-bottom: 8px;
+  }
+  .pull-quote cite {
+    font-size: 0.78rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-style: normal;
+  }
+
+  /* ── CHART CARD ── */
+  .chart-card {
+    background: white;
+    border: 1px solid #ddd5c4;
+    border-radius: 6px;
+    padding: 32px;
+    margin: 32px 0;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+  }
+  .chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .chart-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--ink);
+  }
+  .chart-source {
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 500;
+  }
+  .chart-subtitle {
+    font-size: 0.83rem;
+    color: var(--muted);
+    margin-bottom: 24px;
+  }
+  .chart-wrap {
+    position: relative;
+    height: 340px;
+  }
+  .chart-note {
+    font-size: 0.75rem;
+    color: #9a9086;
+    margin-top: 14px;
+    line-height: 1.5;
+  }
+
+  /* ── TWO COLUMN ── */
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+    margin: 32px 0;
+  }
+
+  /* ── COMPARISON BLOCK ── */
+  .state-compare {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    border: 1px solid #ddd5c4;
+    border-radius: 6px;
+    overflow: hidden;
+    margin: 32px 0;
+  }
+  .state-col {
+    padding: 36px 32px;
+  }
+  .state-col.tx { background: #fff4ef; border-right: 1px solid #ddd5c4; }
+  .state-col.ca { background: #eff4ff; }
+  .state-name {
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    font-weight: 500;
+    margin-bottom: 16px;
+  }
+  .state-col.tx .state-name { color: var(--tx); }
+  .state-col.ca .state-name { color: var(--ca); }
+  .state-metric {
+    margin-bottom: 20px;
+  }
+  .state-metric .val {
+    font-family: 'Playfair Display', serif;
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .state-col.tx .state-metric .val { color: var(--tx); }
+  .state-col.ca .state-metric .val { color: var(--ca); }
+  .state-metric .desc {
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin-top: 3px;
+    line-height: 1.4;
+  }
+
+  /* ── SLIDER SECTION ── */
+  .slider-section {
+    background: var(--ink);
+    color: var(--paper);
+    border-radius: 8px;
+    padding: 40px;
+    margin: 32px 0;
+  }
+  .slider-section h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: var(--paper);
+  }
+  .slider-section .sub {
+    font-size: 0.85rem;
+    color: #9a9086;
+    margin-bottom: 32px;
+  }
+  .slider-row {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 40px;
+    align-items: start;
+  }
+  .slider-controls label {
+    display: block;
+    font-size: 0.8rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #9a9086;
+    margin-bottom: 10px;
+    font-weight: 500;
+  }
+  input[type="range"] {
+    width: 100%;
+    -webkit-appearance: none;
+    height: 3px;
+    background: #3a3630;
+    border-radius: 2px;
+    outline: none;
+    margin-bottom: 6px;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--gold);
+    cursor: pointer;
+  }
+  .slider-val {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.4rem;
+    color: var(--gold);
+    font-weight: 700;
+    margin-bottom: 28px;
+  }
+  .output-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .output-box {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 4px;
+    padding: 18px;
+  }
+  .output-box .oval {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--gold);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .output-box .olabel {
+    font-size: 0.72rem;
+    color: #7a7068;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    line-height: 1.4;
+  }
+  .cap-note {
+    font-size: 0.72rem;
+    color: #554e46;
+    margin-top: 12px;
+    line-height: 1.5;
+  }
+
+  /* ── INSIGHT CALLOUTS ── */
+  .insight-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin: 32px 0;
+  }
+  .insight-box {
+    border: 1px solid #ddd5c4;
+    border-radius: 6px;
+    padding: 24px 20px;
+    background: white;
+  }
+  .insight-box .inum {
+    font-family: 'Playfair Display', serif;
+    font-size: 2.2rem;
+    font-weight: 900;
+    color: var(--gold);
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+  .insight-box .ititle {
+    font-weight: 500;
+    font-size: 0.88rem;
+    margin-bottom: 6px;
+    color: var(--ink);
+  }
+  .insight-box .idesc {
+    font-size: 0.78rem;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  /* ── ANALYSIS ── */
+  .analysis-body {
+    max-width: 720px;
+  }
+  .analysis-body p {
+    font-size: 1rem;
+    line-height: 1.8;
+    color: #2e271f;
+    margin-bottom: 20px;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    background: var(--ink);
+    color: #665e55;
+    padding: 40px;
+    font-size: 0.78rem;
+    line-height: 1.7;
+  }
+  footer a { color: #9a9086; }
+  .footer-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+  }
+  .footer-head {
+    font-family: 'Playfair Display', serif;
+    font-size: 1rem;
+    color: var(--paper);
+    margin-bottom: 12px;
+  }
+
+  /* ── LEGEND ── */
+  .legend {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+  .legend-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .legend-line {
+    width: 18px; height: 2px;
+    flex-shrink: 0;
+  }
+
+  /* ── TAB TOGGLE ── */
+  .tab-bar {
+    display: flex;
+    gap: 0;
+    border: 1px solid #ddd5c4;
+    border-radius: 4px;
+    overflow: hidden;
+    width: fit-content;
+    margin-bottom: 20px;
+  }
+  .tab-btn {
+    padding: 8px 18px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    border: none;
+    background: white;
+    cursor: pointer;
+    color: var(--muted);
+    transition: all 0.2s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .tab-btn.active {
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  @media (max-width: 768px) {
+    .masthead-inner { grid-template-columns: 1fr; }
+    .masthead-stats { flex-direction: row; flex-wrap: wrap; }
+    .stat-pill { flex: 1; min-width: 140px; }
+    .two-col, .state-compare, .slider-row, .insight-row, .footer-inner {
+      grid-template-columns: 1fr;
+    }
+    .container { padding: 0 20px; }
+    section { padding: 48px 0; }
+  }
+</style>
+</head>
+<body>
+
+<!-- MASTHEAD -->
+<header class="masthead">
+  <div class="masthead-inner">
+    <div>
+      <div class="masthead-tag">Data Analysis &nbsp;·&nbsp; Housing Policy &nbsp;·&nbsp; Property Taxation</div>
+      <h1>The Property Tax<br><em>Paradox</em></h1>
+      <div class="masthead-rule"></div>
+      <p class="masthead-sub">How states with higher property taxes produce cheaper homes, more young homeowners, and more efficient housing markets.  Why prop 13 law is making the California crisis way worse</p>
+    </div>
+    <div class="masthead-stats">
+      <div class="stat-pill">
+        <div class="num">−18%</div>
+        <div class="label">Projected CA home price drop if taxes matched Texas levels</div>
+      </div>
+      <div class="stat-pill">
+        <div class="num">+7.4%</div>
+        <div class="label">Rise in homeownership among Californians aged 25–44 in counterfactual</div>
+      </div>
+      <div class="stat-pill">
+        <div class="num">2.5×</div>
+        <div class="label">Texas effective tax rate vs. California (2% vs. 0.8%)</div>
+      </div>
+    </div>
+  </div>
+  <div class="sources-bar">
+    <div class="sources-bar-inner">
+      <span>Sources</span>
+      <a href="https://www.minneapolisfed.org/research/institute-working-papers/property-taxes-and-housing-allocation-under-financial-constraints" target="_blank" class="src-link">Coven, Golder, Gupta & Ndiaye (2024) — Minneapolis Fed Working Paper No. 93</a>
+      <a href="https://www.minneapolisfed.org/article/2024/how-higher-property-taxes-increase-home-affordability" target="_blank" class="src-link">Horwich (2024) — Minneapolis Fed</a>
+      <a href="https://wallethub.com/edu/states-with-the-highest-and-lowest-property-taxes/11585" target="_blank" class="src-link">WalletHub Property Taxes by State (2024)</a>
+      <a href="https://taxfoundation.org/research/all/state/property-tax-relief-reform-options/" target="_blank" class="src-link">Walczak (2024) — Tax Foundation</a>
+    </div>
+  </div>
+</header>
+
+<!-- SECTION 1: THE RATE GAP -->
+<section>
+  <div class="container">
+    <div class="section-tag">The Rate Gap</div>
+    <h2>Different States of Property Tax</h2>
+    <p class="lead">Effective property tax rates vary more than sevenfold across U.S. states. From 0.27% in Hawaii to over 2% in New Jersey. Texas sits near the top. California by Prop 13, sits near the bottom. This interactive chart provides a reference to explore with data from the US census. With this in mind we can explore how this difference affects affordability and therefore migration.</p>
+
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Effective Property Tax Rates by State (Selected)</div>
+          <div class="chart-subtitle">Annual tax as % of home value &nbsp;·&nbsp; Hover for detail</div>
+        </div>
+        <div class="chart-source">WalletHub / U.S. Census Bureau, 2024</div>
+      </div>
+      <div class="chart-wrap" style="height:380px;">
+        <canvas id="rateChart"></canvas>
+      </div>
+      <p class="chart-note">* Rates from WalletHub's 2024 Property Taxes by State report (cited in Horwich 2024, fn. 1), derived from U.S. Census Bureau median tax payment / median home value. Texas and California highlighted as the paper's primary comparison pair.</p>
+    </div>
+
+    <div class="state-compare">
+      <div class="state-col tx">
+        <div class="state-name">Texas</div>
+        <div class="state-metric">
+          <div class="val">2.0%</div>
+          <div class="desc">Effective property tax rate (calibrated, Coven et al. 2024 Table 4)</div>
+        </div>
+        <div class="state-metric">
+          <div class="val">$240K</div>
+          <div class="desc">Median home price (Horwich 2024, WalletHub footnote 1)</div>
+        </div>
+        <div class="state-metric">
+          <div class="val">$3,872</div>
+          <div class="desc">Avg. annual property tax bill (WalletHub 2024)</div>
+        </div>
+        <div class="state-metric">
+          <div class="val">66%</div>
+          <div class="desc">Homeownership rate (Coven et al. 2024, calibration target)</div>
+        </div>
+      </div>
+      <div class="state-col ca">
+        <div class="state-name">California</div>
+        <div class="state-metric">
+          <div class="val">0.8%</div>
+          <div class="desc">Effective property tax rate (calibrated, Coven et al. 2024 Table 4)</div>
+        </div>
+        <div class="state-metric">
+          <div class="val">$660K</div>
+          <div class="desc">Median home price (Horwich 2024, WalletHub footnote 1)</div>
+        </div>
+        <div class="state-metric">
+          <div class="val">~$5,280</div>
+          <div class="desc">Avg. annual tax at 0.8% of $660K median value (Horwich 2024)</div>
+        </div>
+        <div class="state-metric">
+          <div class="val">61%</div>
+          <div class="desc">Homeownership rate (Coven et al. 2024, calibration target)</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pull-quote">
+      <p>"Property taxes effectively act like a forced mortgage and shift the burden of housing costs. With this capitalization, families have lower prices to pay today, but on net the same amounts over time."</p>
+      <cite>Abdoulaye Ndiaye, NYU Stern  Horwich (2024), Minneapolis Federal Reserve</cite>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 2: HOMEOWNERSHIP BY AGE -->
+<section>
+  <div class="container">
+    <div class="section-tag">The Life Cycle Divergence</div>
+    <h2>Who Owns at What Age =</h2>
+    <p class="lead">In high-tax Texas, homeownership rates plateau around age 50 as higher carrying costs discourage older adults from sitting on large homes. In low tax California, ownership keeps climbing through age 80. This graph clearly shows the difference. This gap proves how property taxes can affect age related ownership especially for new grads and students.</p>
+
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Homeownership Rate by Age: Texas vs. California</div>
+          <div class="chart-subtitle">Fraction of age group owning their home — empirical data &nbsp;·&nbsp; Toggle between own and rent</div>
+        </div>
+        <div class="chart-source">Coven, Golder, Gupta & Ndiaye (2024), Figure 2 Panel A — ACS microdata + Verisk/Infutor</div>
+      </div>
+      <div class="tab-bar" style="margin-bottom:16px;">
+        <button class="tab-btn active" onclick="switchAgeTab('own')">Ownership</button>
+        <button class="tab-btn" onclick="switchAgeTab('rent')">Renting</button>
+      </div>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#c8410b"></div>Texas</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#1a5c9e"></div>California</div>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="ageChart"></canvas>
+      </div>
+      <p class="chart-note">Reconstructed from empirical scatter in Figure 2, Panel A (Coven et al. 2024). Data points derived from ACS 1-year public microdata merged with PUMA-level property tax rates from Verisk/Infutor. Each point represents the fraction of that age group in each state who own or rent, out of all people in the ACS who live in Texas or California.</p>
+    </div>
+
+    <div class="insight-row">
+      <div class="insight-box">
+        <div class="inum">50–70</div>
+        <div class="ititle">Peak bedroom-hoarding years</div>
+        <div class="idesc">Most bedrooms in the U.S. are owned by people 50–70 — often empty-nesters with fewer people per room than families in their 30s (Coven et al. 2024, Figure 1).</div>
+      </div>
+      <div class="insight-box">
+        <div class="inum">+4.5%</div>
+        <div class="ititle">More under-35s per 1pp tax rise</div>
+        <div class="idesc">A one percentage point higher property tax rate is associated with 4.5% more of the local population being under 35 — and 5.3% fewer residents aged 65+ (Table 3, Coven et al. 2024).</div>
+      </div>
+      <div class="insight-box">
+        <div class="inum">+3.8%</div>
+        <div class="ititle">More families with young children</div>
+        <div class="idesc">Higher-tax areas have 3.8% more residents with children under 6 per 1pp tax increase. Higher property taxes sort families with children into ownership (Table 3, Coven et al. 2024).</div>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Bedroom Ownership Distribution by Age Group</div>
+          <div class="chart-subtitle">Most U.S. bedrooms are owned by people who are laready old and established. Obvious but the gap is huge and excarbated by stuff like prop 13.</div>
+        </div>
+        <div class="chart-source">Coven et al. (2024), Figure 1 Panel A ACS microdata</div>
+      </div>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#2a6db5"></div>≤1 person/bedroom (under-occupied)</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#e87c3e"></div>1–2 people/bedroom</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#4dab6d"></div>2+ people/bedroom (crowded)</div>
+      </div>
+      <div class="chart-wrap" style="height:300px;">
+        <canvas id="bedroomChart"></canvas>
+      </div>
+      <p class="chart-note">Peak bedroom ownership occurs ages 55–65 so when you are already very old. Young families aged 30–45 face the most crowding (highest share at 2+ people/bedroom) despite owning fewer bedrooms. This mismatch is the core inefficiency that higher property taxes address through the "lock-in" mechanism.</p>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 3: CAPITALIZATION CALCULATOR -->
+<section style="background: var(--paper2);">
+  <div class="container">
+    <div class="section-tag">The Capitalization Mechanism</div>
+    <h2>The Formula of Capitalization analysis</h2>
+    <p class="lead">Higher property get capitalized into lower home prices and this is clear in CA. Coven et al finds a doubling of the property tax rate is associated with a 22.2% decrease in home value. I visualized that into this widget. 
+      1. Select the price of your dream house in CA in the bottom slider
+      2. In the top slider select the tax rate. You will notice how your house pruchase will change positvely as you increase the tax rate. Though of obviously you will be paying more in taxes, the price drop is so significant that it more than offsets the tax increase.
+    </p>
+
+    <div class="slider-section">
+      <h3>Property Tax Capitalization Explorer</h3>
+      <p class="sub">Based on regression estimates from Coven et al. (2024), Table 2 Panel A — ACS microdata + Verisk/Infutor data, 2017–2019. State fixed effects specification.</p>
+      <div class="slider-row">
+        <div class="slider-controls">
+          <label>Current Effective Tax Rate</label>
+          <input type="range" id="taxSlider" min="0.3" max="3.0" step="0.05" value="0.8" oninput="updateCap()">
+          <div class="slider-val" id="taxVal">0.80%</div>
+
+          <label>Home Price at Base Rate (0.8%)</label>
+          <input type="range" id="priceSlider" min="100" max="1200" step="10" value="660" oninput="updateCap()">
+          <div class="slider-val" id="priceVal">$660,000</div>
+
+          <p class="cap-note">Formula: ΔPrice = −22.2% × log₂(newRate / 0.8%). Based on specification (3), Table 2 Panel A, Coven et al. (2024). This is the capitalization elasticity found within-state across municipalities. The 18% CA counterfactual uses a user-cost model calibrated to the full model (Table 4).</p>
+        </div>
+        <div class="output-grid">
+          <div class="output-box">
+            <div class="oval" id="outNewPrice">$660K</div>
+            <div class="olabel">Projected home price at selected rate</div>
+          </div>
+          <div class="output-box">
+            <div class="oval" id="outPriceDelta">0%</div>
+            <div class="olabel">Price change from California baseline</div>
+          </div>
+          <div class="output-box">
+            <div class="oval" id="outDownPay">$132K</div>
+            <div class="olabel">Down payment required (20%)</div>
+          </div>
+          <div class="output-box">
+            <div class="oval" id="outAnnualTax">$5,280</div>
+            <div class="olabel">Annual property tax at selected rate</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 3B: THE MODEL -->
+<section>
+  <div class="container">
+    <div class="section-tag">The Model</div>
+    <h2>How the Minneapolis Fed Built Its Case</h2>
+    <p class="lead">The 18% price drop and 7.4% ownership gain  come from a structural overlapping generations model calibrated to match actual housing market data across Texas and California. Created by Economic modelers from the Minneapolis fed.</p>
+
+    <p style="max-width:720px; line-height:1.8; color:#2e271f; margin-bottom:20px;">Coven et al (2024)  an OLG model. Overlapping generations. Households enter at age 25 with no assets and live for up to 60 years, working for 35 and retiring for 25. Every period they make a  choice: rent or own, stay or move, Texas or California. Those choices depend on income, wealth, house prices, property taxes, and the expected cost of carrying housing into aging.</p>
+
+    <p style="max-width:720px; line-height:1.8; color:#2e271f; margin-bottom:20px;">The model has six state variables, two geographies, a full lifecycle of age groups,  rental market, down payment constraints set at 20% of purchase price, and a minimum house size requirement. It is calibrated to match homeownership rates, wealth-to-income ratios, migration flows, and income levels in both states. It aims at a 66% ownership rate in Texas and 61% in California, a moving rate of 1.7%, a rent-to-income ratio of 0.30, and a wealth-to-income ratio of 4.4 for the bottom 80% of households. All of those match the data.</p>
+
+    <p style="max-width:720px; line-height:1.8; color:#2e271f; margin-bottom:32px;">For economists: The household utility function is Cobb Douglas over non durable consumption and housing. Households also value bequests and face location-specific amenity benefits from owning versus renting. The key financial friction is the down payment constraint: to buy, you need liquid wealth equal to 20% of the purchase price. That is the binding constraint for most young guys. </p>
+
+    <div class="chart-card" style="background:#faf8f4;">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Core Model Equations</div>
+          <div class="chart-subtitle">Selected from Coven et al. (2024) </div>
+        </div>
+        <div class="chart-source">Working Paper No. 93, Minneapolis Fed</div>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-top:8px;">
+        <div style="background:white; border:1px solid #e0d8cc; border-radius:4px; padding:20px;">
+          <div style="font-size:10px; letter-spacing:2px; text-transform:uppercase; color:#c9922a; margin-bottom:10px; font-weight:500;">Utility Function (Eq. 11)</div>
+          <div style="font-family:'Playfair Display',serif; font-size:0.95rem; color:#1a1410; line-height:1.8; margin-bottom:10px;">
+            U(C, H) = <sup>1</sup>/<sub>1&minus;&sigma;</sub> (C<sup>&alpha;</sup> H<sup>1&minus;&alpha;</sup>)<sup>1&minus;&sigma;</sup> + &Xi;<sup>R</sup><sub>l</sub>
+          </div>
+          <div style="font-size:0.75rem; color:#7a7068; line-height:1.5;">Households value consumption C and housing H. &alpha; is calibrated to 0.637. &sigma; = 2 (standard risk aversion). Location amenity &Xi; captures CA vs TX preferences.</div>
+        </div>
+        <div style="background:white; border:1px solid #e0d8cc; border-radius:4px; padding:20px;">
+          <div style="font-size:10px; letter-spacing:2px; text-transform:uppercase; color:#c9922a; margin-bottom:10px; font-weight:500;">Down Payment Constraint (Eq. 2)</div>
+          <div style="font-family:'Playfair Display',serif; font-size:0.95rem; color:#1a1410; line-height:1.8; margin-bottom:10px;">
+            Y<sub>t</sub> + (1+r)A<sub>t</sub> = &theta; &middot; P<sub>i</sub> &middot; H<sub>t</sub>
+          </div>
+          <div style="font-size:0.75rem; color:#7a7068; line-height:1.5;">To buy, liquid wealth must cover &theta; = 20% of the home value P&middot;H. When P falls due to higher taxes, the required down payment falls with it. That is the capitalization channel in one equation.</div>
+        </div>
+        <div style="background:white; border:1px solid #e0d8cc; border-radius:4px; padding:20px;">
+          <div style="font-size:10px; letter-spacing:2px; text-transform:uppercase; color:#c9922a; margin-bottom:10px; font-weight:500;">User Cost / Rent-Price Link (Eq. 13)</div>
+          <div style="font-family:'Playfair Display',serif; font-size:0.95rem; color:#1a1410; line-height:1.8; margin-bottom:10px;">
+            R<sub>i</sub> = &phi;<sub>i</sub> &middot; P<sub>i</sub> = (&tau;<sub>i</sub> + r + &delta;) &middot; P<sub>i</sub>
+          </div>
+          <div style="font-size:0.75rem; color:#7a7068; line-height:1.5;">Rent equals user cost times price. When &tau; (property tax rate) rises, the user cost rises, so buyers discount P downward. This is the price-capitalization mechanism that drives the 18% CA result.</div>
+        </div>
+        <div style="background:white; border:1px solid #e0d8cc; border-radius:4px; padding:20px;">
+          <div style="font-size:10px; letter-spacing:2px; text-transform:uppercase; color:#c9922a; margin-bottom:10px; font-weight:500;">Calibrated Parameters (Table 4)</div>
+          <div style="font-size:0.82rem; color:#2a221a; line-height:1.8;">
+            &tau;<sub>TX</sub> = 2.0% &nbsp;&nbsp; &tau;<sub>CA</sub> = 0.8%<br>
+            P<sub>TX</sub> = 1.0 (normalized) &nbsp;&nbsp; P<sub>CA</sub> = 2.44<br>
+            &theta; = 0.20 &nbsp;&nbsp; r = 2.4% &nbsp;&nbsp; &delta; = 2.2%<br>
+            &beta; = 0.879 &nbsp;&nbsp; &Psi; = 2,550 (bequest motive)
+          </div>
+          <div style="font-size:0.75rem; color:#7a7068; line-height:1.5; margin-top:8px;">Bequest motive &Psi; is a key driver of elderly lock-in: older households accumulate housing partly to pass it on, which keeps them in large homes longer than their own needs require.</div>
+        </div>
+      </div>
+      <p class="chart-note" style="margin-top:20px;"> I just included this for those interested. This was a very thorough analysis done by them. I dont fully understand it Im still a junior in Economics but from these you can see it is serious</p>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 4: THE COUNTERFACTUAL -->
+<section>
+  <div class="container">
+    <div class="section-tag">The Counterfactual</div>
+    <h2>What Texas Level Taxes Would Do to California</h2>
+    <p class="lead">Coven et al. (2024) run a structural model counterfactual. Raise California's property tax rate from 0.8% to 2%, matching Texas, and solve for the new steady state. Keep in mind texas isnt even the highest tax state so this is even higher diffs with more taxes..</p>
+
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Homeownership Rate in California: Baseline vs. Counterfactual</div>
+          <div class="chart-subtitle">What homeownership would look like if CA adopted TX-level property taxes</div>
+        </div>
+        <div class="chart-source">Coven et al. (2024), Figure 5 — OLG model, steady-state comparison</div>
+      </div>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-line" style="background:#1a5c9e;"></div>CA Baseline (0.8% tax)</div>
+        <div class="legend-item"><div class="legend-line" style="background:#c9922a; height:2px; border-top: 2px dashed #c9922a; background:none;"></div>CA Counterfactual (2.0% tax)</div>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="counterChart"></canvas>
+      </div>
+      <p class="chart-note">Derived from Figure 5, Coven et al. (2024). Model calibrated to match empirical homeownership rates, migration patterns, income levels, and wealth-to-income ratios in CA and TX. The counterfactual raises CA property tax rate from 0.8% to 2%, with home prices adjusting via user-cost capitalization. Welfare increases across all age groups, with larger gains among younger households.</p>
+    </div>
+
+    <div class="insight-row">
+      <div class="insight-box">
+        <div class="inum">−18%</div>
+        <div class="ititle">CA home price decline</div>
+        <div class="idesc">Under the counterfactual, California home prices fall 18% due to capitalization of higher future tax payments into lower purchase prices (Section 5, Coven et al. 2024).</div>
+      </div>
+      <div class="insight-box">
+        <div class="inum">+4.6%</div>
+        <div class="ititle">Overall CA homeownership rise</div>
+        <div class="idesc">California homeownership increases from 61.1% to 64.0% in the new steady state — a 4.6% increase across all age groups (Section 5.3, Coven et al. 2024).</div>
+      </div>
+      <div class="insight-box">
+        <div class="inum">+7.4%</div>
+        <div class="ititle">Young household ownership rise</div>
+        <div class="idesc">Among Californians aged 25–44, the homeownership increase is 7.4% — nearly double the overall rate, concentrated in the most financially constrained cohort.</div>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Migration Response to a Property Tax Rise in California</div>
+          <div class="chart-subtitle">Annual migration flows TX↔CA: baseline vs. counterfactual, by age</div>
+        </div>
+        <div class="chart-source">Coven et al. (2024), Figure 4 — OLG model steady state</div>
+      </div>
+      <div class="tab-bar">
+        <button class="tab-btn active" onclick="switchMigTab('in')">Into California</button>
+        <button class="tab-btn" onclick="switchMigTab('out')">Out of California</button>
+      </div>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#2a6db5"></div>Baseline</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#c9922a"></div>Counterfactual (TX-level taxes)</div>
+      </div>
+      <div class="chart-wrap" style="height:280px;">
+        <canvas id="migChart"></canvas>
+      </div>
+      <p class="chart-note">Under higher property taxes, in-migration to California increases from 2% to 3% annually, driven by young, financially constrained households who can now afford lower-priced CA homes. Out-migration falls from 1.5% to 1%. Incomes of movers average 22.4% higher in CA than TX (Appendix Figure A5, Coven et al. 2024).</p>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 5: ANALYSIS -->
+<section style="background: var(--accent-light);">
+  <div class="container">
+    <div class="section-tag">Analysis</div>
+    <h2>What the Evidence Says</h2>
+    <div class="analysis-body">
+      <p>Horwich (2024) explains that higher property taxes get capitalized into lower home prices, which means buyers pay less upfront because they expect to pay more over time. It shows why the same tax can feel punishing to one group and helpful to another. Existing homeowners feel the bill right away, while younger buyers may benefit from a lower purchase price and a weaker entry barrier.</p>
+
+      <p>Walczak (2024) argues that property taxes do less economic harm than many other taxes and that is the core reason economists keep defending them. Income taxes can discourage work and investment. Sales taxes can discourage spending. Property taxes are different because they are tied to immovable assets like land and buildings, so they are harder to avoid and less likely to distort labor or production decisions in the same way. His argument is that they are a better tax base than many any of the alternatives.</p>
+
+      <div class="pull-quote">
+        <p>"For older homeowners, property taxes affect incentives to sell or stay put. Low property taxes make it financially advantageous to sit tight, even if the nest has long been empty—a powerful “lock-in” effect. Higher property taxes, by contrast, raise the motivation to downsize, which puts more homes on the market for young families who will make use of those empty bedrooms"</p>
+        <cite>Jeff Horwich, Minneapolis Fed (2024)</cite>
+      </div>
+
+      <p>Horwich also explains that higher property taxes can push older adults to downsize and can shift homeownership toward younger families, which means the tax does not just raise revenue. It changes who stays and who can get into the housing market in the first place. People talk about property taxes as a burden and stop there. The economic research shows something more interesting.</p>
+
+]
+      <p>Coven et als great in depth Econometric analysis in this paper shows the math and the data clearly. Raising California's rate to match Texas lowers home prices . Housing wealth goes up even as prices fall because more people own. Incomes rise slightly as financially constrained households gain access to California's higher wage labor markets. The tax   redistributes housing. It also reduces the mismatch between where people can afford to live and where the good jobs are. Property taxes are unpopular but the evidence is clear. They are one of the better tools governments have for affordability, efficiency, and equalizing houses for younger guys</p>
+    <p>Walczak argues against assessment limitations like Proposition 13, explaining how such measures create perverse incentives that lock existing homeowners in place, unfairly shift the tax burden to younger and lower income buyers, and ultimately worsen the very housing affordability crisis they were supposed to address. So even though the tax is visible and politically toxic, it looks better than many alternatives when you compare efficiency, stability, and housing market effects. </p>
+
+    <p>Hopefully the data visuals  created here makes it clear how prop taxes can impact affordabilty. Included a few Math details of the peer reviewed MN fed anlaysis though the Econometric analysis goes even deeper than what I included here so that should be checked out. Making it all easy to see so at the end here you should have a good idea about the benifits with hard data to back it up and the story behind the data as well. </p>
+
+   
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div>
+      <div class="footer-head">Sources</div>
+      <p><strong>Coven, J., Golder, S., Gupta, A. & Ndiaye, A. (2024).</strong> "Property Taxes and Housing Allocation Under Financial Constraints." Minneapolis Fed Institute Working Paper No. 93. DOI: 10.21034/iwp.93<br><a href="https://www.minneapolisfed.org/research/institute-working-papers/property-taxes-and-housing-allocation-under-financial-constraints" target="_blank">minneapolisfed.org</a></p>
+      <br>
+      <p><strong>Horwich, J. (2024).</strong> "How higher property taxes increase home affordability." Federal Reserve Bank of Minneapolis.<br><a href="https://www.minneapolisfed.org/article/2024/how-higher-property-taxes-increase-home-affordability" target="_blank">minneapolisfed.org</a></p>
+      <br>
+      <p><strong>Walczak, J. (2024).</strong> "Confronting the New Property Tax Revolt." Tax Foundation.<br><a href="https://taxfoundation.org/research/all/state/property-tax-relief-reform-options/" target="_blank">taxfoundation.org</a></p>
+      <br>
+      <p><strong>WalletHub (2024).</strong> "Property Taxes by State." Via U.S. Census Bureau data.<br><a href="https://wallethub.com/edu/states-with-the-highest-and-lowest-property-taxes/11585" target="_blank">wallethub.com</a></p>
+    </div>
+    <div>
+      <div class="footer-head">Data Modifying Methodology </div>
+      <p>Interactive charts are reconstructed from published figures and tables in Coven et al. (2024), Working Paper No. 93. Homeownership by age curves are derived from Figure 2 Panel A and Table 5 data. The counterfactual chart derives from Figure 5. Migration figures from Section 5.2 and Figure 4. Bedroom distribution from Figure 1 Panel A.</p>
+      <br>
+      <p>The capitalization calculator applies the within state regression elasticity from Table 2 Panel a</p>
+      <br>
+      <p>State effective tax rates from WalletHub (2024), cited as footnote 1 in Horwich (2024): CA 0.71–0.8%; TX 1.63–2%; NJ 2.11%; HI 0.27%. Model calibration uses 0.8% (CA) and 2.0% (TX) per Table 4, Coven et al. (2024).</p>
+    </div>
+  </div>
+</footer>
+
+<script>
+// ── COLOR PALETTE ──
+const TX_COLOR = '#c8410b';
+const CA_COLOR = '#1a5c9e';
+const GOLD = '#c9922a';
+const MUTED = '#9a9086';
+const GRID = 'rgba(0,0,0,0.06)';
+
+Chart.defaults.font.family = "'DM Sans', sans-serif";
+Chart.defaults.font.size = 12;
+
+// ── 1. STATE RATE BAR CHART ──
+const stateRateCtx = document.getElementById('rateChart').getContext('2d');
+const rateData = {
+  states: ['Hawaii','Alabama','Arizona','California','Nevada','Colorado','Florida','Georgia','Idaho','Utah','Wyoming','Virginia','N Carolina','Tennessee','Oregon','Missouri','Montana','Arkansas','Indiana','Ohio','New Mexico','Washington','Mississippi','Oklahoma','Minnesota','S Carolina','Wisconsin','Maryland','Michigan','Nebraska','Kansas','Connecticut','Vermont','N Hampshire','Illinois','New Jersey','Texas','New York','Massachusetts','Pennsylvania'],
+  rates:   [0.27,   0.38,    0.45,     0.71,       0.47,   0.51,     0.71,    0.74,    0.61,  0.42,  0.54,    0.82,    0.84,      0.56,       0.93,   0.97,    0.69,    0.61,   0.76,  1.53, 0.52,       0.83,       0.50,        0.93,    1.05,      0.55,        1.73,      1.09,    1.32,    1.57,   1.35,   1.81,    1.59,    1.66,       2.01,    2.11,  1.63,  1.40,        1.12,          1.49]
+};
+
+// Sort by rate
+const sorted = rateData.states.map((s, i) => ({ s, r: rateData.rates[i] })).sort((a, b) => a.r - b.r);
+const sortedStates = sorted.map(x => x.s);
+const sortedRates = sorted.map(x => x.r);
+const barColors = sortedStates.map(s => {
+  if (s === 'Texas') return TX_COLOR;
+  if (s === 'California') return CA_COLOR;
+  if (s === 'New Jersey') return '#8b1a1a';
+  if (s === 'Hawaii') return '#2a8a5e';
+  return 'rgba(180,170,158,0.6)';
+});
+
+new Chart(stateRateCtx, {
+  type: 'bar',
+  data: {
+    labels: sortedStates,
+    datasets: [{
+      data: sortedRates,
+      backgroundColor: barColors,
+      borderWidth: 0,
+      borderRadius: 2,
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: ctx => ` ${ctx.parsed.x.toFixed(2)}% effective rate`
+        },
+        backgroundColor: '#1a1916',
+        titleColor: '#f5f0e8',
+        bodyColor: '#c9922a',
+        padding: 10,
+      }
+    },
+    scales: {
+      x: {
+        grid: { color: GRID },
+        ticks: { callback: v => v + '%', color: MUTED },
+        title: { display: true, text: 'Effective property tax rate (%)', color: MUTED, font: { size: 11 } }
+      },
+      y: {
+        grid: { display: false },
+        ticks: {
+          color: ctx => {
+            const l = ctx.tick.label;
+            if (l === 'Texas') return TX_COLOR;
+            if (l === 'California') return CA_COLOR;
+            return MUTED;
+          },
+          font: ctx => {
+            const l = ctx.tick.label;
+            return { weight: (l === 'Texas' || l === 'California') ? '700' : '300', size: 11 };
+          }
+        }
+      }
+    }
+  }
+});
+
+// ── 2. AGE / OWNERSHIP CHART ──
+// Data reconstructed from Figure 2 Panel A, Coven et al. 2024
+// Scatter digitized from published figure; represents fraction of age group in each state
+const ages = [28,30,32,34,36,38,40,42,44,46,48,50,52,54,56,58,60,62,64,66,68,70,72,74,76,78,80];
+
+const ownTX = [0.28,0.30,0.32,0.31,0.31,0.32,0.32,0.31,0.30,0.30,0.29,0.28,0.28,0.27,0.27,0.26,0.26,0.26,0.27,0.27,0.28,0.28,0.28,0.28,0.29,0.29,0.29];
+const ownCA = [0.08,0.10,0.12,0.15,0.18,0.22,0.26,0.30,0.32,0.34,0.36,0.37,0.38,0.39,0.40,0.42,0.43,0.44,0.45,0.46,0.47,0.47,0.48,0.48,0.48,0.48,0.47];
+const rentTX = [0.43,0.42,0.40,0.38,0.36,0.33,0.30,0.26,0.23,0.20,0.18,0.16,0.15,0.14,0.13,0.13,0.12,0.12,0.12,0.12,0.11,0.11,0.11,0.11,0.10,0.10,0.09];
+const rentCA = [0.50,0.48,0.46,0.43,0.40,0.37,0.33,0.30,0.27,0.25,0.23,0.22,0.21,0.20,0.19,0.18,0.18,0.17,0.17,0.16,0.16,0.15,0.15,0.14,0.14,0.13,0.13];
+
+let ageChartMode = 'own';
+const ageCtx = document.getElementById('ageChart').getContext('2d');
+const ageChart = new Chart(ageCtx, {
+  type: 'line',
+  data: {
+    labels: ages,
+    datasets: [
+      {
+        label: 'Texas',
+        data: ownTX,
+        borderColor: TX_COLOR,
+        backgroundColor: 'rgba(200,65,11,0.07)',
+        tension: 0.4,
+        borderWidth: 2.5,
+        pointRadius: 4,
+        pointHoverRadius: 7,
+        fill: false,
+      },
+      {
+        label: 'California',
+        data: ownCA,
+        borderColor: CA_COLOR,
+        backgroundColor: 'rgba(26,92,158,0.07)',
+        tension: 0.4,
+        borderWidth: 2.5,
+        pointRadius: 4,
+        pointHoverRadius: 7,
+        fill: false,
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          title: ctx => `Age ${ctx[0].label}`,
+          label: ctx => ` ${ctx.dataset.label}: ${(ctx.parsed.y*100).toFixed(1)}% of age group`
+        },
+        backgroundColor: '#1a1916',
+        titleColor: '#f5f0e8',
+        bodyColor: '#e0d8cc',
+        padding: 12,
+      },
+      annotation: {
+        annotations: {
+          line1: {
+            type: 'line',
+            xMin: 50, xMax: 50,
+            borderColor: 'rgba(0,0,0,0.15)',
+            borderWidth: 1,
+            borderDash: [4, 4],
+            label: {
+              display: true,
+              content: 'Divergence ~50',
+              position: 'start',
+              color: MUTED,
+              font: { size: 10 }
+            }
+          }
+        }
+      }
+    },
+    scales: {
+      x: {
+        grid: { color: GRID },
+        ticks: { color: MUTED },
+        title: { display: true, text: 'Age', color: MUTED, font: { size: 11 } }
+      },
+      y: {
+        grid: { color: GRID },
+        ticks: {
+          callback: v => (v*100).toFixed(0)+'%',
+          color: MUTED
+        },
+        title: { display: true, text: 'Fraction of age group', color: MUTED, font: { size: 11 } },
+        min: 0, max: 0.55
+      }
+    }
+  }
+});
+
+function switchAgeTab(mode) {
+  ageChartMode = mode;
+  document.querySelectorAll('.tab-btn').forEach((btn, i) => {
+    btn.classList.toggle('active', (mode === 'own' && i === 0) || (mode === 'rent' && i === 1));
+  });
+  if (mode === 'own') {
+    ageChart.data.datasets[0].data = ownTX;
+    ageChart.data.datasets[1].data = ownCA;
+    ageChart.data.datasets[0].label = 'Texas — Owning';
+    ageChart.data.datasets[1].label = 'California — Owning';
+    ageChart.options.scales.y.max = 0.55;
+  } else {
+    ageChart.data.datasets[0].data = rentTX;
+    ageChart.data.datasets[1].data = rentCA;
+    ageChart.data.datasets[0].label = 'Texas — Renting';
+    ageChart.data.datasets[1].label = 'California — Renting';
+    ageChart.options.scales.y.max = 0.55;
+  }
+  ageChart.update();
+}
+
+// ── 3. BEDROOM CHART ──
+const bedroomCtx = document.getElementById('bedroomChart').getContext('2d');
+// From Figure 1 Panel A, Coven et al. 2024 — fraction of all US bedrooms by age group
+const ageGroupsBed = ['20-24','25-29','30-34','35-39','40-44','45-49','50-54','55-59','60-64','65-69','70-74','75-79','80+'];
+const under1 =   [0.003, 0.006, 0.009, 0.011, 0.012, 0.014, 0.016, 0.017, 0.018, 0.019, 0.016, 0.011, 0.007];
+const one_two =  [0.001, 0.002, 0.003, 0.004, 0.005, 0.005, 0.005, 0.005, 0.005, 0.004, 0.003, 0.002, 0.001];
+const crowded =  [0.001, 0.002, 0.003, 0.003, 0.003, 0.002, 0.002, 0.001, 0.001, 0.001, 0.001, 0.000, 0.000];
+
+new Chart(bedroomCtx, {
+  type: 'bar',
+  data: {
+    labels: ageGroupsBed,
+    datasets: [
+      { label: '≤1 person/bedroom', data: under1, backgroundColor: '#2a6db5', stack: 'a', borderWidth: 0 },
+      { label: '1-2 people/bedroom', data: one_two, backgroundColor: '#e87c3e', stack: 'a', borderWidth: 0 },
+      { label: '2+ people/bedroom', data: crowded, backgroundColor: '#4dab6d', stack: 'a', borderWidth: 0 },
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: ctx => ` ${ctx.dataset.label}: ${(ctx.parsed.y*100).toFixed(2)}% of all US bedrooms`
+        },
+        backgroundColor: '#1a1916',
+        titleColor: '#f5f0e8',
+        bodyColor: '#e0d8cc',
+        padding: 10,
+      }
+    },
+    scales: {
+      x: { grid: { display: false }, ticks: { color: MUTED } },
+      y: {
+        grid: { color: GRID },
+        stacked: true,
+        ticks: { callback: v => (v*100).toFixed(1)+'%', color: MUTED },
+        title: { display: true, text: 'Fraction of all US bedrooms', color: MUTED, font: { size: 11 } }
+      }
+    }
+  }
+});
+
+// ── 4. CAPITALIZATION CALCULATOR ──
+function updateCap() {
+  const rate = parseFloat(document.getElementById('taxSlider').value);
+  const basePrice = parseFloat(document.getElementById('priceSlider').value) * 1000;
+  const baseRate = 0.8;
+
+  document.getElementById('taxVal').textContent = rate.toFixed(2) + '%';
+  document.getElementById('priceVal').textContent = '$' + (basePrice/1000).toFixed(0) + ',000';
+
+  // Capitalization: -22.2% per doubling of rate (log2 spec, Table 2 col 3)
+  const priceDelta = -0.222 * Math.log2(rate / baseRate);
+  const newPrice = basePrice * (1 + priceDelta);
+  const downPay = newPrice * 0.20;
+  const annualTax = newPrice * (rate / 100);
+
+  const fmt = v => v >= 1000000
+    ? '$' + (v/1000000).toFixed(2) + 'M'
+    : '$' + Math.round(v/1000) + 'K';
+
+  document.getElementById('outNewPrice').textContent = fmt(newPrice);
+  document.getElementById('outPriceDelta').textContent = (priceDelta*100 >= 0 ? '+' : '') + (priceDelta*100).toFixed(1)+'%';
+  document.getElementById('outDownPay').textContent = fmt(downPay);
+  document.getElementById('outAnnualTax').textContent = '$' + Math.round(annualTax).toLocaleString();
+}
+updateCap();
+
+// ── 5. COUNTERFACTUAL CHART ──
+const counterCtx = document.getElementById('counterChart').getContext('2d');
+// From Figure 5, Coven et al. 2024 — CA homeownership rate by age, baseline vs counterfactual
+const agesCF = [25,28,30,32,34,36,38,40,42,44,46,48,50,52,54,56,58,60,62,64,66,68,70,72,74,76,78,80];
+const caBaseline =     [0.02,0.06,0.12,0.19,0.27,0.36,0.44,0.52,0.57,0.60,0.62,0.63,0.63,0.64,0.64,0.64,0.63,0.63,0.62,0.61,0.60,0.59,0.58,0.57,0.57,0.57,0.57,0.57];
+const caCounter =      [0.05,0.11,0.18,0.26,0.35,0.44,0.52,0.59,0.63,0.66,0.68,0.68,0.68,0.67,0.66,0.65,0.64,0.62,0.61,0.60,0.59,0.58,0.57,0.56,0.56,0.56,0.56,0.56];
+
+new Chart(counterCtx, {
+  type: 'line',
+  data: {
+    labels: agesCF,
+    datasets: [
+      {
+        label: 'CA Baseline (0.8% tax)',
+        data: caBaseline,
+        borderColor: CA_COLOR,
+        backgroundColor: 'rgba(26,92,158,0.08)',
+        tension: 0.4,
+        borderWidth: 2.5,
+        pointRadius: 4,
+        pointHoverRadius: 7,
+        fill: true,
+      },
+      {
+        label: 'CA Counterfactual (2.0% tax)',
+        data: caCounter,
+        borderColor: GOLD,
+        borderDash: [6, 3],
+        backgroundColor: 'transparent',
+        tension: 0.4,
+        borderWidth: 2.5,
+        pointRadius: 4,
+        pointStyle: 'crossRot',
+        pointHoverRadius: 7,
+        fill: false,
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          title: ctx => `Age ${ctx[0].label}`,
+          label: ctx => ` ${ctx.dataset.label}: ${(ctx.parsed.y*100).toFixed(1)}%`
+        },
+        backgroundColor: '#1a1916',
+        titleColor: '#f5f0e8',
+        bodyColor: '#e0d8cc',
+        padding: 12,
+      }
+    },
+    scales: {
+      x: {
+        grid: { color: GRID },
+        ticks: { color: MUTED },
+        title: { display: true, text: 'Age', color: MUTED, font: { size: 11 } }
+      },
+      y: {
+        grid: { color: GRID },
+        ticks: { callback: v => (v*100).toFixed(0)+'%', color: MUTED },
+        title: { display: true, text: 'Homeownership rate in California', color: MUTED, font: { size: 11 } },
+        min: 0, max: 0.75
+      }
+    }
+  }
+});
+
+// ── 6. MIGRATION CHART ──
+const migCtx = document.getElementById('migChart').getContext('2d');
+const migAges = [25,30,35,40,45,50,55,60,65,70,75,80];
+const migInBase =    [0.025,0.022,0.028,0.033,0.034,0.031,0.020,0.013,0.011,0.010,0.010,0.010];
+const migInCounter = [0.028,0.035,0.043,0.044,0.038,0.025,0.015,0.011,0.010,0.010,0.010,0.011];
+const migOutBase =   [0.040,0.042,0.030,0.025,0.020,0.018,0.018,0.019,0.020,0.020,0.020,0.020];
+const migOutCounter =[0.025,0.028,0.015,0.011,0.010,0.012,0.015,0.018,0.019,0.020,0.020,0.020];
+
+let migMode = 'in';
+const migChart = new Chart(migCtx, {
+  type: 'line',
+  data: {
+    labels: migAges,
+    datasets: [
+      {
+        label: 'Baseline',
+        data: migInBase,
+        borderColor: CA_COLOR,
+        tension: 0.4,
+        borderWidth: 2.5,
+        pointRadius: 4,
+        fill: false,
+      },
+      {
+        label: 'Counterfactual',
+        data: migInCounter,
+        borderColor: GOLD,
+        tension: 0.4,
+        borderWidth: 2.5,
+        borderDash: [5, 3],
+        pointStyle: 'crossRot',
+        pointRadius: 4,
+        fill: false,
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          title: ctx => `Age ${ctx[0].label}`,
+          label: ctx => ` ${ctx.dataset.label}: ${(ctx.parsed.y*100).toFixed(1)}% annual migration`
+        },
+        backgroundColor: '#1a1916',
+        titleColor: '#f5f0e8',
+        bodyColor: '#e0d8cc',
+        padding: 10,
+      }
+    },
+    scales: {
+      x: {
+        grid: { color: GRID },
+        ticks: { color: MUTED },
+        title: { display: true, text: 'Age', color: MUTED, font: { size: 11 } }
+      },
+      y: {
+        grid: { color: GRID },
+        ticks: { callback: v => (v*100).toFixed(1)+'%', color: MUTED },
+        title: { display: true, text: 'Annual migration fraction', color: MUTED, font: { size: 11 } },
+        min: 0
+      }
+    }
+  }
+});
+
+function switchMigTab(mode) {
+  migMode = mode;
+  const btns = document.querySelectorAll('.tab-btn');
+  // Find the mig section's tab buttons (2nd set)
+  const migBtns = document.querySelectorAll('#migChart').length;
+  btns.forEach(btn => {
+    if (btn.getAttribute('onclick')?.includes('switchMigTab')) {
+      btn.classList.toggle('active',
+        (mode === 'in' && btn.textContent.includes('Into')) ||
+        (mode === 'out' && btn.textContent.includes('Out'))
+      );
+    }
+  });
+  if (mode === 'in') {
+    migChart.data.datasets[0].data = migInBase;
+    migChart.data.datasets[1].data = migInCounter;
+    migChart.data.datasets[0].label = 'Baseline — Into CA';
+    migChart.data.datasets[1].label = 'Counterfactual — Into CA';
+  } else {
+    migChart.data.datasets[0].data = migOutBase;
+    migChart.data.datasets[1].data = migOutCounter;
+    migChart.data.datasets[0].label = 'Baseline — Out of CA';
+    migChart.data.datasets[1].label = 'Counterfactual — Out of CA';
+  }
+  migChart.update();
+}
+</script>
+</body>
+</html>
